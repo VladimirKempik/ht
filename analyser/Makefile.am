@@ -18,6 +18,6 @@ class_analy.cc class_analy.h ne_analy.cc ne_analy.h \
 analy_il.cc analy_il.h le_analy.cc le_analy.h \
 analy_ppc.cc analy_ppc.h macho_analy.cc macho_analy.h flt_analy.cc flt_analy.h \
 xbe_analy.cc xbe_analy.h pef_analy.cc pef_analy.h analy_arm.cc analy_arm.h \
-xex_analy.cc xex_analy.h analy_avr.cc analy_avr.h
+xex_analy.cc xex_analy.h analy_avr.cc analy_avr.h analy_rv64.cc analy_rv64.h
 
 

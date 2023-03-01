@@ -25,6 +25,7 @@
 #include "analy_register.h"
 #include "analy_x86.h"
 #include "analy_arm.h"
+#include "analy_rv64.h"
 #include "analy_avr.h"
 #include "elf_analy.h"
 
@@ -649,6 +650,16 @@ void ElfAnalyser::initUnasm()
 			((AnalyPPCDisassembler*)analy_disasm)->init(this, ANALY_PPC_64);
 		}
 		break;
+	case ELF_EM_RISCV: // RV64
+		if (elf_shared->ident.e_ident[ELF_EI_CLASS] != ELFCLASS64) {
+			errorbox("RISCV64 can't be used in a 32-Bit ELF.");
+		} else {
+			DPRINTF("initing analy_rv64_disassembler\n");
+			analy_disasm = new AnalyRV64Disassembler();
+			((AnalyRV64Disassembler*)analy_disasm)->init(this, ANALY_RV_64);
+		}
+		break;
+
 	case ELF_EM_ARM:
 		if (elf_shared->ident.e_ident[ELF_EI_CLASS] != ELFCLASS32) {
 			errorbox("ARM can't be used in a 64-Bit ELF.");

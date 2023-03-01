@@ -34,6 +34,7 @@
 #include "javadis.h"
 #include "x86dis.h"
 #include "ppcdis.h"
+#include "rv64dis.h"
 #include "armdis.h"
 #include "avrdis.h"
 
@@ -330,6 +331,7 @@ BUILDER(ATOM_DISASM_PPC, PPCDisassembler, Disassembler)
 BUILDER(ATOM_DISASM_IL, ILDisassembler, Disassembler)
 BUILDER(ATOM_DISASM_ARM, ArmDisassembler, Disassembler)
 BUILDER(ATOM_DISASM_AVR, AVRDisassembler, Disassembler)
+BUILDER(ATOM_DISASM_RISCV64, RV64Disassembler, Disassembler)
 
 bool init_asm()
 {
