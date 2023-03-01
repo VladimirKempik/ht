@@ -448,11 +448,11 @@ const struct riscv64_opcode riscv64_opcodes[] = {
 { "and",  OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 7,0),    MASK_RTYPE,	RV64I,		{RD, RS1, RS2} },
 
 //64-bit addition
-{ "addw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 0, 0), MASK_ITYPE,    RV64I,        {RD, RS1, RS2} },
-{ "subw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 0, 0x20), MASK_ITYPE,    RV64I,     {RD, RS1, RS2} },
-{ "sllw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 1, 0), MASK_ITYPE,    RV64I,        {RD, RS1, RS2} },
-{ "srlw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 5, 0), MASK_ITYPE,    RV64I,        {RD, RS1, RS2} },
-{ "sraw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 5, 0x20), MASK_ITYPE,    RV64I,     {RD, RS1, RS2} },
+{ "addw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 0, 0), MASK_RTYPE,    RV64I,        {RD, RS1, RS2} },
+{ "subw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 0, 0x20), MASK_RTYPE,    RV64I,     {RD, RS1, RS2} },
+{ "sllw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 1, 0), MASK_RTYPE,    RV64I,        {RD, RS1, RS2} },
+{ "srlw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 5, 0), MASK_RTYPE,    RV64I,        {RD, RS1, RS2} },
+{ "sraw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 5, 0x20), MASK_RTYPE,    RV64I,     {RD, RS1, RS2} },
 
 //I-type
 { "addi",   OP_ITYPE(RV64_OP_I1_OPCODE_VALUE, 0), MASK_ITYPE,	RV64I,		{RD, RS1, RIMM_I}},
@@ -550,7 +550,24 @@ const struct riscv64_opcode riscv64_opcodes[] = {
     { "c.add",    OP_C_FUNCT4(2,9), MASK_OP_C_F4,    RV64GC,        {C_RD, C_RS} },
     { "c.fsdsp",  OP_C_FUNCT3(2,5), MASK_OP_C_F3,    RV64GC,        {C_FD, C_SDSP_OFF} },
     { "c.swsp",   OP_C_FUNCT3(2,6), MASK_OP_C_F3,    RV64GC,        {C_RS, C_SWSP_OFF} },
-    { "c.sdsp",   OP_C_FUNCT3(2,7), MASK_OP_C_F3,    RV64GC,        {C_RS, C_SDSP_OFF} }
+    { "c.sdsp",   OP_C_FUNCT3(2,7), MASK_OP_C_F3,    RV64GC,        {C_RS, C_SDSP_OFF} },
+
+    //M extension
+    //RV64_OP_R_OPCODE_VALUE and RV64_OP_R64_OPCODE_VALUE for 32-bit ops
+    { "mul",    OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 0, 1),   MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "mulh",   OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 1, 1),   MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "mulhsu", OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 2, 1),   MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "mulhu",  OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 3, 1),   MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "div",    OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 4, 1),   MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "divu",   OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 5, 1),   MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "rem",    OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 6, 1),   MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "remu",   OP_RTYPE(RV64_OP_R_OPCODE_VALUE, 7, 1),   MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "mulw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 0, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "divw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 4, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "divuw",  OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 5, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "rem",    OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 6, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    { "remuw",  OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 7, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} }
+
 };
 
 const int riscv64_num_opcodes =
