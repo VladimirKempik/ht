@@ -13,6 +13,10 @@ void yyerror (eval_scalar *resultptr,char *s)
 	set_eval_error(s);
 }
 
+#ifdef __APPLE__
+int yyparse (void *YYPARSE_PARAM);
+#endif
+
 %}
 %parse-param {eval_scalar *resultptr}
 
