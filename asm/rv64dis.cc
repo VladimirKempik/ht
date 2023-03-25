@@ -222,6 +222,7 @@ const char *RV64Disassembler::strf(dis_insn *disasm_insn, int style, const char 
 
 		bool need_comma = false;
 		bool need_paren = false;
+        bool skip_comma = false;
         
 		for (int opidx = 0; opidx < rv64_insn->ops; opidx++) {
 			int flags = rv64_insn->op[opidx].flags;
@@ -230,6 +231,10 @@ const char *RV64Disassembler::strf(dis_insn *disasm_insn, int style, const char 
 				is += sprintf(is, "%s, ", cs_symbol);
 				need_comma = false;
 			}
+            if (flags & RV64_OPERAND_INSIDE_PARENS) {
+                is += sprintf(is, "%s(", cs_symbol);
+                need_paren = true;
+            }
 			if ((flags & RV64_OPERAND_GPR) || (flags & RV64_COMPRESSED_GPR)) {
 				is += sprintf(is, "%sx%d", cs_default, rv64_insn->op[opidx].reg);
 			} else if (((flags & RV64_OPERAND_FPR) != 0) || (flags & RV64_COMPRESSED_FPR) != 0) {
@@ -253,7 +258,24 @@ const char *RV64Disassembler::strf(dis_insn *disasm_insn, int style, const char 
 				} else {
 					is += ht_snprintf(is, 100, "%s0x%qx", cs_number, rv64_insn->op[opidx].rel.mem);
 				}
-			} else if ((flags & RV64_OPERAND_ABSOLUTE) != 0) {
+            } else if (((flags & RV64_OPERAND_ABSOLUTE) != 0) && ((flags & RV64_OPERAND_AMO_ORDER) != 0)) {
+                //amo ordering arg
+                skip_comma = true;
+                switch (rv64_insn->op[opidx].abs.mem) {
+                    case 1:
+                        is += sprintf(is, "%srl ", cs_default);
+                        break;
+                    case 2:
+                        is += sprintf(is, "%saq ", cs_default);
+                        break;
+                    case 3:
+                        is += sprintf(is, "%saq_rl ", cs_default);
+                        break;
+                    case 0:
+                    default:
+                        break;
+                }
+            } else if ((flags & RV64_OPERAND_ABSOLUTE) != 0) {
                 if ((flags & RV64_CSR_REGS) != 0) {
                     char * csrname = csr_number_to_name(rv64_insn->op[opidx].abs.mem);
                     if (csrname != NULL) {
@@ -298,6 +320,13 @@ const char *RV64Disassembler::strf(dis_insn *disasm_insn, int style, const char 
 				is += sprintf(is, "%s(", cs_symbol);
 				need_paren = true;
 			}
+
+            //no comma needed if it's aq/rl
+            if (skip_comma)
+            {
+                need_comma = false;
+                skip_comma = false;
+            }
 		}
          
 	}

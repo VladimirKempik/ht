@@ -129,6 +129,9 @@ extern char * csr_number_to_name(uint32 csr_no);
 #define RV64_OP_R(i) ((i) & 0xFE00707F)
 #define RV64_OP_R_OPCODE_VALUE  (0b0110011)
 #define RV64_OP_R64_OPCODE_VALUE  (0b0111011)
+#define RV64_OP_AMO_OPCODE_VALUE  (0b0101111)
+#define RV64_AMO_WIDTH_W_VALUE  (0b010)
+#define RV64_AMO_WIDTH_D_VALUE  (0b011)
 
 //I and S-type 32-bit opcode , I opcode value is 0b0010011 and 0b0000011. S opcode value is 0b0100011, SB is 0b1100011
 #define RV64_OP_ISB(i) ((i) & 0x707F)
@@ -254,8 +257,14 @@ extern const struct riscv64_operand riscv64_operands[];
 
 #define RV64_CSR_REGS (02000)
 
+//for AMO's aq/rl
+#define RV64_OPERAND_AMO_ORDER (04000)
+
+// This operand should be wrapped in parentheses
+
+#define RV64_OPERAND_INSIDE_PARENS (010000)
 /* This operand names a vector unit register.  The disassembler
    prints these with a leading 'v'.  */
-#define RV64_OPERAND_VR (04000)
+#define RV64_OPERAND_VR (020000)
 
 #endif

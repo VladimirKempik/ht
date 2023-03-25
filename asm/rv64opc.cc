@@ -28,6 +28,7 @@
 
 //RV64I
 #define OP_RTYPE(opcode, funct3, funct7) static_cast<uint32>(((opcode) | ((funct3) << 12) | ((funct7) << 25)))
+#define OP_RTYPE_F5(opcode, funct3, funct5) static_cast<uint32>(((opcode) | ((funct3) << 12) | ((funct5) << 27)))
 #define OP_ITYPE(opcode, funct3)        static_cast<uint32>(((opcode) | ((funct3) << 12)))
 #define OP_ITYPE_F6(opcode, funct3, funct6) static_cast<uint32>(((opcode) | ((funct3) << 12) | ((funct6) << 26)))
 #define OP_ITYPE_F7(opcode, funct3, funct7) OP_RTYPE((opcode), (funct3), (funct7))
@@ -36,6 +37,7 @@
 #define OP_ETYPE(opcode, funct3,  funct12)        static_cast<uint32>(((opcode) | ((funct3) << 12) |  ((funct12) << 20)))
 
 #define MASK_RTYPE OP_RTYPE(0b1111111, 0b111, 0b1111111)
+#define MASK_RTYPE_F5 OP_RTYPE_F5(0b1111111, 0b111, 0b11111)
 #define MASK_ITYPE OP_ITYPE(0b1111111, 0b111)
 #define MASK_ITYPE_F6 OP_ITYPE_F6(0b1111111, 0b111, 0b111111)
 #define MASK_ITYPE_F7 OP_ITYPE_F7(0b1111111, 0b111, 0b1111111)
@@ -411,7 +413,11 @@ const struct riscv64_operand riscv64_operands[] =
 #define RIMM_I_CSRREG C_ADDI16IMM + 1
     {12, 20, 0, RV64_OPERAND_ABSOLUTE | RV64_CSR_REGS},
 #define RIMM_CSRI RIMM_I_CSRREG + 1
-    {5, 15, 0, RV64_OPERAND_ABSOLUTE}
+    {5, 15, 0, RV64_OPERAND_ABSOLUTE},
+#define AMO_ORDERING RIMM_CSRI + 1
+    {2, 25, 0, RV64_OPERAND_ABSOLUTE | RV64_OPERAND_AMO_ORDER},
+#define RS1_ADDR AMO_ORDERING + 1
+    {5, 15, 0, RV64_OPERAND_GPR | RV64_OPERAND_INSIDE_PARENS}
 };
   /* The BA field in an XL form instruction.  */
 
@@ -566,7 +572,34 @@ const struct riscv64_opcode riscv64_opcodes[] = {
     { "divw",   OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 4, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
     { "divuw",  OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 5, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
     { "rem",    OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 6, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
-    { "remuw",  OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 7, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} }
+    { "remuw",  OP_RTYPE(RV64_OP_R64_OPCODE_VALUE, 7, 1), MASK_RTYPE,    RV64GC,        {RD, RS1, RS2} },
+    //A extension
+    //w width
+    { "amoswap.w",  OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 1),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amoadd.w",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 0),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amoxor.w",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 4),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amoand.w",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 12),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amoor.w",    OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 8),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amomin.w",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 16),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amomax.w",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 20),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amominu.w",  OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 24),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amomaxu.w",  OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 28),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "lr.w",       OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 2),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "sc.w",       OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_W_VALUE, 3),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+
+        //d width
+    { "amoswap.d",  OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 1),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amoadd.d",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 0),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amoxor.d",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 4),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amoand.d",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 12),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amoor.d",    OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 8),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amomin.d",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 16),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amomax.d",   OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 20),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amominu.d",  OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 24),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "amomaxu.d",  OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 28),   MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "lr.d",       OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 2),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+    { "sc.d",       OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 3),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
+
 
 };
 
