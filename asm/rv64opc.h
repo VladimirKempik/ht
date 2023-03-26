@@ -163,6 +163,12 @@ extern char * csr_number_to_name(uint32 csr_no);
 #define RV64_OP_CSR(i) ((i) & 0x707F)
 #define RV64_OP_CSR_OPCODE_VALUE  (0b1110011)
 
+//f/d opcodes
+#define RV64_OP_LOAD_FP_VALUE (0b0000111)
+#define RV64_OP_STORE_FP_VALUE (0b0100111)
+#define RV64_OP_FP_VALUE (0b1010011)
+#define RV64_FP_WIDTH_W_VALUE  (0b010)
+#define RV64_FP_WIDTH_D_VALUE  (0b011)
 
 
 /* A macro to extract the major opcode from an comppressed instruction CR-type.  */
@@ -263,8 +269,13 @@ extern const struct riscv64_operand riscv64_operands[];
 // This operand should be wrapped in parentheses
 
 #define RV64_OPERAND_INSIDE_PARENS (010000)
+
+//rounding mode for Floats
+#define RV64_OPERAND_ROUNDING_MODE (020000)
+
+
 /* This operand names a vector unit register.  The disassembler
    prints these with a leading 'v'.  */
-#define RV64_OPERAND_VR (020000)
+#define RV64_OPERAND_VR (040000)
 
 #endif

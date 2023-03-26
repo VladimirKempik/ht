@@ -29,6 +29,11 @@
 //RV64I
 #define OP_RTYPE(opcode, funct3, funct7) static_cast<uint32>(((opcode) | ((funct3) << 12) | ((funct7) << 25)))
 #define OP_RTYPE_F5(opcode, funct3, funct5) static_cast<uint32>(((opcode) | ((funct3) << 12) | ((funct5) << 27)))
+#define OP_RTYPE_F7_ONLY(opcode, funct7) static_cast<uint32>(((opcode) | ((funct7) << 25)))
+#define OP_RTYPE_F5_F7(opcode, funct5, funct7) static_cast<uint32>(((opcode) | ((funct5) << 20) |  ((funct7) << 25)))
+#define OP_RTYPE_F2(opcode, funct2) static_cast<uint32>(((opcode) | ((funct2) << 25)))
+#define OP_RTYPE_F3_F5_F7(opcode, funct3, funct5, funct7) static_cast<uint32>(((opcode) | ((funct3) << 12) | ((funct5) << 20) |  ((funct7) << 25)))
+
 #define OP_ITYPE(opcode, funct3)        static_cast<uint32>(((opcode) | ((funct3) << 12)))
 #define OP_ITYPE_F6(opcode, funct3, funct6) static_cast<uint32>(((opcode) | ((funct3) << 12) | ((funct6) << 26)))
 #define OP_ITYPE_F7(opcode, funct3, funct7) OP_RTYPE((opcode), (funct3), (funct7))
@@ -41,6 +46,10 @@
 #define MASK_ITYPE OP_ITYPE(0b1111111, 0b111)
 #define MASK_ITYPE_F6 OP_ITYPE_F6(0b1111111, 0b111, 0b111111)
 #define MASK_ITYPE_F7 OP_ITYPE_F7(0b1111111, 0b111, 0b1111111)
+#define MASK_RTYPE_F7_ONLY OP_RTYPE_F7_ONLY(0b1111111, 0b1111111)
+#define MASK_RTYPE_F5_F7 OP_RTYPE_F5_F7(0b1111111, 0b11111, 0b1111111)
+#define MASK_RTYPE_F2 OP_RTYPE_F2(0b1111111, 0b11)
+#define MASK_RTYPE_F3_F5_F7 OP_RTYPE_F3_F5_F7(0b1111111, 0b111, 0b11111, 0b1111111)
 
 #define MASK_UTYPE OP_UTYPE(0b1111111)
 #define MASK_ETYPE OP_ETYPE(0b1111111, 0b111, 0b111111111111)
@@ -390,10 +399,10 @@ const struct riscv64_operand riscv64_operands[] =
     {6, 2, extract_c_ld_off, RV64_OPERAND_PARENS | RV64_OPERAND_ABSOLUTE},
 #define C_FS1 C_LD_OFF + 1
     {3, 2, 0, RV64_COMPRESSED_FPR},
-#define C_FD1 C_FS1 + 1
+#define C_FD1 C_FS1 + 1 //for compressed f register
     {3, 7, 0, RV64_COMPRESSED_FPR},
-#define C_FD C_FD1 + 1
-    {3, 7, 0, RV64_OPERAND_FPR},
+#define C_FD C_FD1 + 1 //for non-compressed f register
+    {5, 2, 0, RV64_OPERAND_FPR},
 #define C_LWSP_OFF C_FD + 1
     {7, 2, extract_c_lwsp_off,  RV64_OPERAND_ABSOLUTE | RV64_SP_RELATIVE},
 #define C_LDSP_OFF C_LWSP_OFF + 1
@@ -417,7 +426,17 @@ const struct riscv64_operand riscv64_operands[] =
 #define AMO_ORDERING RIMM_CSRI + 1
     {2, 25, 0, RV64_OPERAND_ABSOLUTE | RV64_OPERAND_AMO_ORDER},
 #define RS1_ADDR AMO_ORDERING + 1
-    {5, 15, 0, RV64_OPERAND_GPR | RV64_OPERAND_INSIDE_PARENS}
+    {5, 15, 0, RV64_OPERAND_GPR | RV64_OPERAND_INSIDE_PARENS},
+#define FD RS1_ADDR + 1
+    {5, 7, 0, RV64_OPERAND_FPR},
+#define FS2 FD + 1
+    {5, 20, 0, RV64_OPERAND_FPR},
+#define FS1 FS2 + 1
+    {5, 15, 0, RV64_OPERAND_FPR},
+#define RM FS1 + 1
+    {3, 12, 0, RV64_OPERAND_ABSOLUTE | RV64_OPERAND_ROUNDING_MODE},
+#define FS3 RM + 1
+    {5, 27, 0, RV64_OPERAND_FPR},
 };
   /* The BA field in an XL form instruction.  */
 
@@ -600,10 +619,78 @@ const struct riscv64_opcode riscv64_opcodes[] = {
     { "lr.d",       OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 2),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
     { "sc.d",       OP_RTYPE_F5(RV64_OP_AMO_OPCODE_VALUE, RV64_AMO_WIDTH_D_VALUE, 3),    MASK_RTYPE_F5,    RV64GC,        {AMO_ORDERING, RD, RS2, RS1_ADDR} },
 
+    //F/D extension
+    //store/load
+    { "flw",    OP_ITYPE(RV64_OP_LOAD_FP_VALUE, RV64_FP_WIDTH_W_VALUE),     MASK_ITYPE,    RV64GC,        {FD,  RLOFF, RS1} },
+    { "fld",    OP_ITYPE(RV64_OP_LOAD_FP_VALUE, RV64_FP_WIDTH_D_VALUE),     MASK_ITYPE,    RV64GC,        {FD,  RLOFF, RS1} },
+    { "fsw",    OP_ITYPE(RV64_OP_STORE_FP_VALUE, RV64_FP_WIDTH_W_VALUE),    MASK_ITYPE,    RV64GC,        {FS2, RSOFF, RS1} },
+    { "fsd",    OP_ITYPE(RV64_OP_STORE_FP_VALUE, RV64_FP_WIDTH_D_VALUE),    MASK_ITYPE,    RV64GC,        {FS2, RSOFF, RS1} },
+    //computes
+    { "fadd.s",    OP_RTYPE_F7_ONLY(RV64_OP_FP_VALUE, 0),           MASK_RTYPE_F7_ONLY,    RV64GC,        {FD, FS1, FS2, RM} },
+    { "fsub.s",    OP_RTYPE_F7_ONLY(RV64_OP_FP_VALUE, 4),           MASK_RTYPE_F7_ONLY,    RV64GC,        {FD, FS1, FS2, RM} },
+    { "fmul.s",    OP_RTYPE_F7_ONLY(RV64_OP_FP_VALUE, 8),           MASK_RTYPE_F7_ONLY,    RV64GC,        {FD, FS1, FS2, RM} },
+    { "fdiv.s",    OP_RTYPE_F7_ONLY(RV64_OP_FP_VALUE, 12),          MASK_RTYPE_F7_ONLY,    RV64GC,        {FD, FS1, FS2, RM} },
+    { "fadd.d",    OP_RTYPE_F7_ONLY(RV64_OP_FP_VALUE, 1),           MASK_RTYPE_F7_ONLY,    RV64GC,        {FD, FS1, FS2, RM} },
+    { "fsub.d",    OP_RTYPE_F7_ONLY(RV64_OP_FP_VALUE, 5),           MASK_RTYPE_F7_ONLY,    RV64GC,        {FD, FS1, FS2, RM} },
+    { "fmul.d",    OP_RTYPE_F7_ONLY(RV64_OP_FP_VALUE, 9),           MASK_RTYPE_F7_ONLY,    RV64GC,        {FD, FS1, FS2, RM} },
+    { "fdiv.d",    OP_RTYPE_F7_ONLY(RV64_OP_FP_VALUE, 13),          MASK_RTYPE_F7_ONLY,    RV64GC,        {FD, FS1, FS2, RM} },
+    { "fsqrt.s",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 0, 44),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, FS1, RM} }, //unchecked
+    { "fsqrt.d",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 0, 45),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, FS1, RM} }, //unchecked
+    { "fmin.s",    OP_RTYPE(RV64_OP_FP_VALUE, 0, 20),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} }, //unchecked
+    { "fmax.s",    OP_RTYPE(RV64_OP_FP_VALUE, 1, 20),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} }, //unchecked
+    { "fmin.d",    OP_RTYPE(RV64_OP_FP_VALUE, 0, 21),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} }, //unchecked
+    { "fmax.d",    OP_RTYPE(RV64_OP_FP_VALUE, 1, 21),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} }, //unchecked
+    { "fsgnj.s",   OP_RTYPE(RV64_OP_FP_VALUE, 0, 16),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} },
+    { "fsgnjn.s",  OP_RTYPE(RV64_OP_FP_VALUE, 1, 16),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} },
+    { "fsgnjx.s",  OP_RTYPE(RV64_OP_FP_VALUE, 2, 16),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} },
+    { "fsgnj.d",   OP_RTYPE(RV64_OP_FP_VALUE, 0, 17),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} },
+    { "fsgnjn.d",  OP_RTYPE(RV64_OP_FP_VALUE, 1, 17),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} },
+    { "fsgnjx.d",  OP_RTYPE(RV64_OP_FP_VALUE, 2, 17),               MASK_RTYPE,            RV64GC,        {FD, FS1, FS2} },
 
+    { "fmadd.s",    OP_RTYPE_F2(67, 0),               MASK_RTYPE_F2,            RV64GC,        {FD, FS1, FS2, FS3, RM} },
+    { "fmsub.s",    OP_RTYPE_F2(71, 0),               MASK_RTYPE_F2,            RV64GC,        {FD, FS1, FS2, FS3, RM} },
+    { "fnmsub.s",   OP_RTYPE_F2(75, 0),               MASK_RTYPE_F2,            RV64GC,        {FD, FS1, FS2, FS3, RM} },
+    { "fnmadd.s",   OP_RTYPE_F2(79, 0),               MASK_RTYPE_F2,            RV64GC,        {FD, FS1, FS2, FS3, RM} },
+    { "fmadd.d",    OP_RTYPE_F2(67, 1),               MASK_RTYPE_F2,            RV64GC,        {FD, FS1, FS2, FS3, RM} },
+    { "fmsub.d",    OP_RTYPE_F2(71, 1),               MASK_RTYPE_F2,            RV64GC,        {FD, FS1, FS2, FS3, RM} },
+    { "fnmsub.d",   OP_RTYPE_F2(75, 1),               MASK_RTYPE_F2,            RV64GC,        {FD, FS1, FS2, FS3, RM} },
+    { "fnmadd.d",   OP_RTYPE_F2(79, 1),               MASK_RTYPE_F2,            RV64GC,        {FD, FS1, FS2, FS3, RM} },
+
+    //conversions
+    { "fcvt.s.w",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 0, 104),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, RS1, RM} },
+    { "fcvt.s.wu",  OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 1, 104),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, RS1, RM} },
+    { "fcvt.s.l",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 2, 104),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, RS1, RM} },
+    { "fcvt.s.lu",  OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 3, 104),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, RS1, RM} },
+    { "fcvt.d.w",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 0, 105),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, RS1, RM} },
+    { "fcvt.d.wu",  OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 1, 105),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, RS1, RM} },
+    { "fcvt.d.l",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 2, 105),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, RS1, RM} },
+    { "fcvt.d.lu",  OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 3, 105),         MASK_RTYPE_F5_F7,      RV64GC,        {FD, RS1, RM} },
+    { "fcvt.w.s",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 0, 96),          MASK_RTYPE_F5_F7,      RV64GC,        {RD, FS1, RM} },
+    { "fcvt.wu.s",  OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 1, 96),          MASK_RTYPE_F5_F7,      RV64GC,        {RD, FS1, RM} },
+    { "fcvt.l.s",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 2, 96),          MASK_RTYPE_F5_F7,      RV64GC,        {RD, FS1, RM} },
+    { "fcvt.lu.s",  OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 3, 96),          MASK_RTYPE_F5_F7,      RV64GC,        {RD, FS1, RM} },
+    { "fcvt.w.d",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 0, 97),          MASK_RTYPE_F5_F7,      RV64GC,        {RD, FS1, RM} },
+    { "fcvt.wu.d",  OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 1, 97),          MASK_RTYPE_F5_F7,      RV64GC,        {RD, FS1, RM} },
+    { "fcvt.l.d",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 2, 97),          MASK_RTYPE_F5_F7,      RV64GC,        {RD, FS1, RM} },
+    { "fcvt.lu.d",  OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 3, 97),          MASK_RTYPE_F5_F7,      RV64GC,        {RD, FS1, RM} },
+    { "fcvt.s.d",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 1, 32),          MASK_RTYPE_F5_F7,      RV64GC,        {FD, FS1, RM} },
+    { "fcvt.d.s",   OP_RTYPE_F5_F7(RV64_OP_FP_VALUE, 0, 33),          MASK_RTYPE_F5_F7,      RV64GC,        {FD, FS1, RM} },
+
+    { "fmv.w.x",   OP_RTYPE_F3_F5_F7(RV64_OP_FP_VALUE, 0, 0, 120),    MASK_RTYPE_F3_F5_F7,      RV64GC,      {FD, RS1} },
+    { "fmv.d.x",   OP_RTYPE_F3_F5_F7(RV64_OP_FP_VALUE, 0, 0, 121),    MASK_RTYPE_F3_F5_F7,      RV64GC,      {FD, RS1} },
+    { "fmv.x.w",   OP_RTYPE_F3_F5_F7(RV64_OP_FP_VALUE, 0, 0, 112),    MASK_RTYPE_F3_F5_F7,      RV64GC,      {RD, FS1} },
+    { "fmv.x.d",   OP_RTYPE_F3_F5_F7(RV64_OP_FP_VALUE, 0, 0, 113),    MASK_RTYPE_F3_F5_F7,      RV64GC,      {RD, FS1} },
+//classifications
+    { "fclass.s",  OP_RTYPE_F3_F5_F7(RV64_OP_FP_VALUE, 1, 0, 112),    MASK_RTYPE_F3_F5_F7,      RV64GC,      {RD, FS1} },
+    { "fclass.d",  OP_RTYPE_F3_F5_F7(RV64_OP_FP_VALUE, 1, 0, 113),    MASK_RTYPE_F3_F5_F7,      RV64GC,      {RD, FS1} },
+//comparisions
+    { "feq.s",     OP_RTYPE(RV64_OP_FP_VALUE, 2,80),                    MASK_RTYPE,              RV64GC,      {RD, FS1, FS2} },
+    { "flt.s",     OP_RTYPE(RV64_OP_FP_VALUE, 1,80),                    MASK_RTYPE,              RV64GC,      {RD, FS1, FS2} },
+    { "fle.s",     OP_RTYPE(RV64_OP_FP_VALUE, 0,80),                    MASK_RTYPE,              RV64GC,      {RD, FS1, FS2} },
+    { "feq.d",     OP_RTYPE(RV64_OP_FP_VALUE, 2,81),                    MASK_RTYPE,              RV64GC,      {RD, FS1, FS2} },
+    { "fle.d",     OP_RTYPE(RV64_OP_FP_VALUE, 0,81),                    MASK_RTYPE,              RV64GC,      {RD, FS1, FS2} },
+    { "flt.d",     OP_RTYPE(RV64_OP_FP_VALUE, 1,81),                    MASK_RTYPE,              RV64GC,      {RD, FS1, FS2} },
 };
 
 const int riscv64_num_opcodes =
   sizeof (riscv64_opcodes) / sizeof (riscv64_opcodes[0]);
-
-//srai now working

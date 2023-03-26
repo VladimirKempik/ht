@@ -227,6 +227,12 @@ const char *RV64Disassembler::strf(dis_insn *disasm_insn, int style, const char 
 		for (int opidx = 0; opidx < rv64_insn->ops; opidx++) {
 			int flags = rv64_insn->op[opidx].flags;
 
+            //if this argument is ROUNDING MODE for FP, then it might be missing, handle the comma in the arguments itself
+            if(((flags & RV64_OPERAND_ABSOLUTE) != 0) && ((flags & RV64_OPERAND_ROUNDING_MODE) != 0))
+            {
+                need_comma = false;
+            }
+
 			if (need_comma) {
 				is += sprintf(is, "%s, ", cs_symbol);
 				need_comma = false;
@@ -273,6 +279,28 @@ const char *RV64Disassembler::strf(dis_insn *disasm_insn, int style, const char 
                         break;
                     case 0:
                     default:
+                        break;
+                }
+            } else if (((flags & RV64_OPERAND_ABSOLUTE) != 0) && ((flags & RV64_OPERAND_ROUNDING_MODE) != 0)) {
+                int rm = rv64_insn->op[opidx].abs.mem;
+                switch (rm) {
+                    case 0:
+                        is += sprintf(is, ", %srne", cs_default);
+                        break;
+                    case 1:
+                        is += sprintf(is, ", %srtz", cs_default);
+                        break;
+                    case 2:
+                        is += sprintf(is, ", %srdn", cs_default);
+                        break;
+                    case 3:
+                        is += sprintf(is, ", %srup", cs_default);
+                        break;
+                    case 4:
+                        is += sprintf(is, ", %srmm", cs_default);
+                        break;
+                    default:
+                        //no additional output
                         break;
                 }
             } else if ((flags & RV64_OPERAND_ABSOLUTE) != 0) {
