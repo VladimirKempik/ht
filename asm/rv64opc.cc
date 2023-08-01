@@ -95,7 +95,11 @@ static uint32 extract_store_offset(uint32 insn, bool *invalid)
 {
     uint16 lower_part = (insn >>  7) & 0x1f;
     uint16 upper_part = ((insn >> 25) & 0x7f) << 5;
-    return upper_part + lower_part;
+    uint32 value = upper_part + lower_part;
+    if ((value & (1 << 11)) != 0) {
+        value -= 1 << 12;
+    }
+    return value;
 }
 
 static uint32 extract_upper_value(uint32 insn, bool *invalid)
@@ -359,10 +363,10 @@ const struct riscv64_operand riscv64_operands[] =
     {12, 20, 0, RV64_OPERAND_ABSOLUTE | RV64_OPERAND_SIGNED},
 //IMM offset from load ops
 #define RLOFF RIMM_I + 1
-    {12, 20, 0, RV64_OPERAND_PARENS | RV64_OPERAND_ABSOLUTE},
+    {12, 20, 0, RV64_OPERAND_PARENS | RV64_OPERAND_ABSOLUTE | RV64_OPERAND_SIGNED},
 //IMM offset from store ops, needs extraction function
 #define RSOFF RLOFF + 1
-    {7, 4, extract_store_offset, RV64_OPERAND_PARENS | RV64_OPERAND_ABSOLUTE},
+    {12, 4, extract_store_offset, RV64_OPERAND_PARENS | RV64_OPERAND_ABSOLUTE | RV64_OPERAND_SIGNED},
 #define LUI_IMM RSOFF + 1
     {20, 12, extract_upper_value, RV64_OPERAND_ABSOLUTE},
 #define AUIPC_IMM LUI_IMM + 1
